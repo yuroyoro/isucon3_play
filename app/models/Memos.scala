@@ -58,7 +58,7 @@ object Memos extends SQLSyntaxSupport[Memos] {
 
   def findPublicByUser(user_id:Int)(implicit session: DBSession = autoSession):List[Memos] = {
     withSQL {
-      select.from(Memos as m).where.eq(m.user, user_id).eq(m.isPrivate, 0).append(sqls"ORDER BY created_at DESC")
+      select.from(Memos as m).where.eq(m.user, user_id).and.eq(m.isPrivate, 0).append(sqls"ORDER BY created_at DESC")
     }.map(Memos(m.resultName)).list.apply()
   }
 

@@ -6,7 +6,7 @@
 GET     /                           controllers.Application.index
 GET     /recent/:page               controllers.Application.recent(page: Int)
 GET     /signin                     controllers.Auth.index
-GET     /signout                    controllers.Auth.signout
+POST    /signout                    controllers.Auth.signout
 POST    /signin                     controllers.Auth.signin
 GET     /mypage                     controllers.Memo.mypage
 GET     /memo/:memoId               controllers.Memo.show(memoId:Int)

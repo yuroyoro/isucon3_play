@@ -9,7 +9,8 @@ import scala.concurrent._
 object Auth extends Controller with Helper {
   def signout = Action { implicit request =>
     requireUser{ user =>
-      antiCsrf{ Results.Redirect("/").withNewSession }
+      val formOpts = request.body.asFormUrlEncoded
+      antiCsrf(formOpts){ Results.Redirect("/").withNewSession }
     }
   }
 
@@ -23,18 +24,21 @@ object Auth extends Controller with Helper {
   }
 
   def signin = Action { implicit request =>
-    val form = request.body.asFormUrlEncoded
+    val formOpts = request.body.asFormUrlEncoded
     (for {
-      username <- form.get("username").headOption
-      password <- form.get("password").headOption
+      form     <- formOpts
+      username <- form("username").headOption
+      password <- form("password").headOption
       user     <- Users.findByName(username)
       if user.password  == sha256(user.salt + password)
     } yield {
       // session.clear()
       user.updateLastAccess
-      Results.Redirect("/").withSession(
-        "user_id" -> user.id.toString,
-        "token"   -> sha256(scala.util.Random.nextInt.toString)
+      appendCacheControl(
+        Results.Redirect("/mypage").withSession(
+          "user_id" -> user.id.toString,
+          "token"   -> sha256(scala.util.Random.nextInt.toString)
+        )
       )
     }).getOrElse {
       Ok(

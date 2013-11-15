@@ -10,20 +10,24 @@ trait Helper {
 
   import sys.process._
   import java.io._
+  import play.api.http.HeaderNames
 
   implicit def futurize[A](result:SimpleResult):Future[SimpleResult] = Future.successful(result)
 
   def requireUser[A](f:Users => SimpleResult)(implicit request:Request[A]):SimpleResult = {
     getUser(request).map{ user =>
-      f(user)
+      appendCacheControl(
+        f(user)
+      )
     }.getOrElse {
       Results.Redirect("/")
     }
   }
 
-  def antiCsrf[A](f: => SimpleResult)(implicit request:Request[A]):SimpleResult = {
+  def antiCsrf[A](formOpts:Option[Map[String, Seq[String]]])(f: => SimpleResult)(implicit request:Request[A]):SimpleResult = {
     (for{
-      sid   <- request.queryString.get("sid")
+      form  <- formOpts
+      sid   <- form.get("sid").flatMap(_.headOption)
       token <- request.session.get("token")
       if sid == token
     } yield {
@@ -37,7 +41,11 @@ trait Helper {
     request.session.get("user_id").flatMap{user_id => Users.find(user_id.toInt) }
   }
 
-  val markdownCmd = "/Users/ozaki/dev/isucon/webapp/bin/markdown"
+  def appendCacheControl(result:SimpleResult):SimpleResult =
+    result.withHeaders( HeaderNames.CACHE_CONTROL -> "private")
+
+  // val markdownCmd = "/Users/ozaki/dev/isucon/webapp/bin/markdown"
+  val markdownCmd = "/home/isucon/webapp/bin/markdown"
   def genMarkdown(md:String):String = {
     val tmp = File.createTempFile("isucontemp", "")
     val out = new BufferedWriter(new FileWriter(tmp))

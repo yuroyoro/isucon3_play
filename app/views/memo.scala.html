@@ -14,7 +14,7 @@ Memo by @(memo.username.getOrElse("")) (@(memo.createdAt.toString("yyyy-MM-dd HH
 }
 |
 @if(!newer.isEmpty) {
-<a id="newer" href="@(urlFor("/memo/"))@(newer.map(_.id).getOrElse(""))">&lt; newer memo</a>
+<a id="newer" href="@(urlFor("/memo/"))@(newer.map(_.id).getOrElse(""))">newer memo&gt;</a>
 }
 
 <hr>

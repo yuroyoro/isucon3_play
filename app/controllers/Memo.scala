@@ -48,16 +48,18 @@ object Memo extends Controller with Helper{
 
   def create = Action { implicit request =>
     requireUser { user =>
-      val form = request.body.asFormUrlEncoded
-      val now = new DateTime()
-      val memo = Memos.create(
-        user = user.id,
-        content = form.get("content").headOption,
-        isPrivate= form.get("is_private").headOption.map{_.toByte}.getOrElse(0x0),
-        createdAt = now,
-        updatedAt = now
-      )
-      Results.Redirect(s"/memo/${memo.id}")
+      val formOpts = request.body.asFormUrlEncoded
+      antiCsrf(formOpts) {
+        val now = new DateTime()
+        val memo = Memos.create(
+          user = user.id,
+          content   = formOpts.flatMap(_.get("content")).flatMap(_.headOption),
+          isPrivate = formOpts.flatMap(_.get("is_private")).flatMap(_.headOption).map{_.toByte}.getOrElse(0x0),
+          createdAt = now,
+          updatedAt = now
+        )
+        Results.Redirect(s"/memo/${memo.id}")
+      }
     }
   }
 }
