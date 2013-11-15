@@ -22,7 +22,6 @@ object Memo extends Controller with Helper{
 
   def show(memoId:Int) = Action { implicit request =>
     val user = getUser
-    Console.println(Memos.find((memoId)))
     (for{
       m <- Memos.find(memoId)
       if m.isPrivate != 1 || !user.filter{ _.id == m.user }.isEmpty

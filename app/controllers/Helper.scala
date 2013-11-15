@@ -34,7 +34,6 @@ trait Helper {
   }
 
   def getUser[A](implicit request:Request[A]) :Option[Users] = {
-    scala.Console.println(s"user_id : ${request.session.get("user_id")}")
     request.session.get("user_id").flatMap{user_id => Users.find(user_id.toInt) }
   }
 
