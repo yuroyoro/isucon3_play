@@ -15,6 +15,7 @@ case class Users(
 
   def destroy()(implicit session: DBSession = Users.autoSession): Unit = Users.destroy(this)(session)
 
+  def updateLastAccess()(implicit session: DBSession = Users.autoSession): Unit = Users.updateLastAccess(this)(session)
 }
 
 
@@ -40,6 +41,12 @@ object Users extends SQLSyntaxSupport[Users] {
     withSQL {
       select(u.username).from(Users as u).where.eq(u.id, id)
     }.map(rs => rs.string(1)).single.apply()
+  }
+
+  def findByName(username:String)(implicit session: DBSession = autoSession):Option[Users] = {
+    withSQL {
+      select.from(Users as u).where.eq(u.username, username)
+    }.map(Users(u.resultName)).single.apply()
   }
 
   def find(id: Int)(implicit session: DBSession = autoSession): Option[Users] = {
@@ -110,6 +117,12 @@ object Users extends SQLSyntaxSupport[Users] {
 
   def destroy(entity: Users)(implicit session: DBSession = autoSession): Unit = {
     withSQL { delete.from(Users).where.eq(column.id, entity.id) }.update.apply()
+  }
+
+  def updateLastAccess(entity: Users)(implicit session: DBSession = autoSession): Unit = {
+    withSQL {
+      update(Users as u).set(sqls"last_access=now()").where.eq(u.id, entity.id)
+    }.update.apply()
   }
 
 }

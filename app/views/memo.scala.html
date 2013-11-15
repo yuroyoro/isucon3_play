@@ -1,0 +1,24 @@
+@(user:Option[models.Users], memo:models.Memos, older:Option[models.Memos], newer:Option[models.Memos], urlFor:String => String)
+<p id="author">
+@if(memo.isPrivate == 1) {
+Private
+} else {
+Public
+}
+Memo by @(memo.username.getOrElse("")) (@(memo.createdAt.toString("yyyy-MM-dd HH:mm:ss")))
+</p>
+
+<hr>
+@if(!older.isEmpty) {
+<a id="older" href="@(urlFor("/memo/"))@(older.map(_.id).getOrElse(""))">&lt; older memo</a>
+}
+|
+@if(!newer.isEmpty) {
+<a id="newer" href="@(urlFor("/memo/"))@(newer.map(_.id).getOrElse(""))">&lt; newer memo</a>
+}
+
+<hr>
+<div id="content_html">
+@Html(memo.contentHtml.getOrElse(""))
+</div>
+

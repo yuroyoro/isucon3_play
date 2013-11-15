@@ -9,6 +9,7 @@ case class Memos(
   user: Int,
   content: Option[String] = None,
   username: Option[String] = None,
+  contentHtml: Option[String] = None,
   isPrivate: Byte,
   createdAt: DateTime,
   updatedAt: DateTime) {
@@ -43,9 +44,21 @@ object Memos extends SQLSyntaxSupport[Memos] {
     countBy(sqls"is_private=0")
   }
 
-  def public(implicit session: DBSession = autoSession): List[Memos] = {
+  def public(page:Int = 0)(implicit session: DBSession = autoSession): List[Memos] = {
     withSQL {
-      select.from(Memos as m).where.append(sqls"is_private=0").append(sqls"ORDER BY created_at DESC, id DESC LIMIT 100")
+      select.from(Memos as m).where.append(sqls"is_private=0").append(sqls"ORDER BY created_at DESC, id DESC LIMIT 100 OFFSET ${page * 100}")
+    }.map(Memos(m.resultName)).list.apply()
+  }
+
+  def findByUser(user_id:Int)(implicit session: DBSession = autoSession):List[Memos] = {
+    withSQL {
+      select.from(Memos as m).where.eq(m.user, user_id).append(sqls"ORDER BY created_at DESC")
+    }.map(Memos(m.resultName)).list.apply()
+  }
+
+  def findPublicByUser(user_id:Int)(implicit session: DBSession = autoSession):List[Memos] = {
+    withSQL {
+      select.from(Memos as m).where.eq(m.user, user_id).eq(m.isPrivate, 0).append(sqls"ORDER BY created_at DESC")
     }.map(Memos(m.resultName)).list.apply()
   }
 
