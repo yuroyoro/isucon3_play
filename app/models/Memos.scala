@@ -1,7 +1,9 @@
 package models
 
-import scalikejdbc._
-import scalikejdbc.SQLInterpolation._
+import play.api.db._
+import play.api.Play.current
+import anorm._
+import anorm.SqlParser._
 import org.joda.time.{DateTime}
 
 case class Memos(
@@ -13,79 +15,40 @@ case class Memos(
   isPrivate: Byte,
   createdAt: DateTime,
   updatedAt: DateTime) {
-
-  def save()(implicit session: DBSession = Memos.autoSession): Memos = Memos.save(this)(session)
-
-  def destroy()(implicit session: DBSession = Memos.autoSession): Unit = Memos.destroy(this)(session)
-
 }
 
+object Memos {
+  import models.AnormExtension._
 
-object Memos extends SQLSyntaxSupport[Memos] {
-
-  override val tableName = "memos"
-
-  override val columns = Seq("id", "user", "content", "is_private", "created_at", "updated_at")
-
-  def apply(m: ResultName[Memos])(rs: WrappedResultSet): Memos = new Memos(
-    id = rs.int(m.id),
-    user = rs.int(m.user),
-    content = rs.stringOpt(m.content),
-    isPrivate = rs.byte(m.isPrivate),
-    createdAt = rs.timestamp(m.createdAt).toDateTime,
-    updatedAt = rs.timestamp(m.updatedAt).toDateTime
+  def parse(row:SqlRow):Memos = Memos(
+    row[Int]("id"),
+    row[Int]("user"),
+    row[Option[String]]("content"),
+    None,
+    None,
+    row[Int]("is_private").toByte,
+    row[DateTime]("created_at"),
+    row[DateTime]("updated_at")
   )
 
-  val m = Memos.syntax("m")
-
-  val autoSession = AutoSession
-
-  def total(implicit session: DBSession = autoSession): Long = {
-    countBy(sqls"is_private=0")
+  def total: Long = DB.withConnection {
+    implicit c => SQL("select count(1) as c from memos where is_private=0").as(scalar[Long].single)
   }
 
-  def public(page:Int = 0)(implicit session: DBSession = autoSession): List[Memos] = {
-    withSQL {
-      select.from(Memos as m).where.append(sqls"is_private=0").append(sqls"ORDER BY created_at DESC, id DESC LIMIT 100 OFFSET ${page * 100}")
-    }.map(Memos(m.resultName)).list.apply()
+  def public(page:Int = 0): List[Memos] = DB.withConnection {
+    implicit c => SQL(s"select m.* from memos as m where is_private=0 order by created_at desc, id desc limit 100 offset ${page * 100}")().map(parse).toList
   }
 
-  def findByUser(user_id:Int)(implicit session: DBSession = autoSession):List[Memos] = {
-    withSQL {
-      select.from(Memos as m).where.eq(m.user, user_id).append(sqls"ORDER BY created_at DESC")
-    }.map(Memos(m.resultName)).list.apply()
+  def findByUser(user_id:Int): List[Memos] = DB.withConnection {
+    implicit c => SQL(s"select m.* from memos as m where m.user=${user_id} order by created_at desc")().map(parse).toList
   }
 
-  def findPublicByUser(user_id:Int)(implicit session: DBSession = autoSession):List[Memos] = {
-    withSQL {
-      select.from(Memos as m).where.eq(m.user, user_id).and.eq(m.isPrivate, 0).append(sqls"ORDER BY created_at DESC")
-    }.map(Memos(m.resultName)).list.apply()
+  def findPublicByUser(user_id:Int): List[Memos] = DB.withConnection {
+    implicit c => SQL(s"select m.* from memos as m where m.is_private=0 and m.user=${user_id} order by created_at desc")().map(parse).toList
   }
 
-  def find(id: Int)(implicit session: DBSession = autoSession): Option[Memos] = {
-    withSQL {
-      select.from(Memos as m).where.eq(m.id, id)
-    }.map(Memos(m.resultName)).single.apply()
-  }
-
-  def findAll()(implicit session: DBSession = autoSession): List[Memos] = {
-    withSQL(select.from(Memos as m)).map(Memos(m.resultName)).list.apply()
-  }
-
-  def countAll()(implicit session: DBSession = autoSession): Long = {
-    withSQL(select(sqls"count(1)").from(Memos as m)).map(rs => rs.long(1)).single.apply().get
-  }
-
-  def findAllBy(where: SQLSyntax)(implicit session: DBSession = autoSession): List[Memos] = {
-    withSQL {
-      select.from(Memos as m).where.append(sqls"${where}")
-    }.map(Memos(m.resultName)).list.apply()
-  }
-
-  def countBy(where: SQLSyntax)(implicit session: DBSession = autoSession): Long = {
-    withSQL {
-      select(sqls"count(1)").from(Memos as m).where.append(sqls"${where}")
-    }.map(_.long(1)).single.apply().get
+  def find(id: Int): Option[Memos] = DB.withConnection {
+    implicit c => SQL(s"select m.* from memos as m where m.id=${id} limit 1")().map(parse).headOption
   }
 
   def create(
@@ -93,48 +56,21 @@ object Memos extends SQLSyntaxSupport[Memos] {
     content: Option[String] = None,
     isPrivate: Byte,
     createdAt: DateTime,
-    updatedAt: DateTime)(implicit session: DBSession = autoSession): Memos = {
-    val generatedKey = withSQL {
-      insert.into(Memos).columns(
-        column.user,
-        column.content,
-        column.isPrivate,
-        column.createdAt,
-        column.updatedAt
-      ).values(
-        user,
-        content,
-        isPrivate,
-        createdAt,
-        updatedAt
-      )
-    }.updateAndReturnGeneratedKey.apply()
+    updatedAt: DateTime): Memos = DB.withConnection {
+      implicit c =>
+        val id = SQL("insert into memos(user, content, is_private, created_at, updated_at) values ({user}, {content}, {is_private}, {created_at}, {updated_at})").on(
+          "user"       -> user,
+          "content"    -> content,
+          "is_private" -> isPrivate,
+          "created_at" -> createdAt,
+          "updated_at" -> updatedAt).executeInsert(scalar[Long].single).toInt
 
-    Memos(
-      id = generatedKey.toInt,
-      user = user,
-      content = content,
-      isPrivate = isPrivate,
-      createdAt = createdAt,
-      updatedAt = updatedAt)
+      Memos(
+        id        = id,
+        user      = user,
+        content   = content,
+        isPrivate = isPrivate,
+        createdAt = createdAt,
+        updatedAt = updatedAt)
   }
-
-  def save(entity: Memos)(implicit session: DBSession = autoSession): Memos = {
-    withSQL {
-      update(Memos as m).set(
-        m.id -> entity.id,
-        m.user -> entity.user,
-        m.content -> entity.content,
-        m.isPrivate -> entity.isPrivate,
-        m.createdAt -> entity.createdAt,
-        m.updatedAt -> entity.updatedAt
-      ).where.eq(m.id, entity.id)
-    }.update.apply()
-    entity
-  }
-
-  def destroy(entity: Memos)(implicit session: DBSession = autoSession): Unit = {
-    withSQL { delete.from(Memos).where.eq(column.id, entity.id) }.update.apply()
-  }
-
 }
