@@ -46,17 +46,12 @@ trait Helper {
 
   // val markdownCmd = "/Users/ozaki/dev/isucon/webapp/bin/markdown"
   val markdownCmd = "/home/isucon/webapp/bin/markdown"
-  def genMarkdown(md:String):String = {
-    val tmp = File.createTempFile("isucontemp", "")
-    val out = new BufferedWriter(new FileWriter(tmp))
-    out.write(md)
-    out.close
 
-    val html = s"${markdownCmd} ${tmp.getAbsolutePath}"!!
+  import eu.henkelmann.actuarius.ActuariusTransformer
 
-    tmp.delete
-    html
-  }
+  val transformer = new ActuariusTransformer()
+
+  def genMarkdown(md:String):String = transformer(md)
 
   def urlFor[A](implicit request:Request[A]):String => String = (path:String) => s"http://${request.host}${path}"
 
