@@ -15,3 +15,5 @@ libraryDependencies ++= Seq(
 play.Project.playScalaSettings
 
 scalikejdbcSettings
+
+atmosPlaySettings

@@ -13,3 +13,6 @@ libraryDependencies ++= Seq(
 
 // Add scalikejdbc mapper generator
 addSbtPlugin("com.github.seratch" %% "scalikejdbc-mapper-generator" % "[1.6, )")
+
+// Add Typesafe Console plugin
+addSbtPlugin("com.typesafe.sbt" % "sbt-atmos-play" % "0.3.2")
