@@ -124,5 +124,19 @@ object Users extends SQLSyntaxSupport[Users] {
       update(Users as u).set(sqls"last_access=now()").where.eq(u.id, entity.id)
     }.update.apply()
   }
+}
 
+object UsersCache {
+  var __cache:Map[Int, Users] = Map.empty[Int, Users]
+
+  def load() :Unit = {
+    __cache = Users.findAll.map{ u => (u.id,  u) }.toMap
+  }
+
+  def apply(user_id:Int):Users = __cache(user_id)
+  def get(user_id:Int):Option[Users] = __cache.get(user_id)
+
+  def nameOf(user_id:Int):Option[String] = __cache.get(user_id).map{_.username}
+
+  def findByName(username:String):Option[Users] = __cache.values.find(_.username == username)
 }

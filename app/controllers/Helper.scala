@@ -38,7 +38,7 @@ trait Helper {
   }
 
   def getUser[A](implicit request:Request[A]) :Option[Users] = {
-    request.session.get("user_id").flatMap{user_id => Users.find(user_id.toInt) }
+    request.session.get("user_id").flatMap{user_id => UsersCache.get(user_id.toInt) }
   }
 
   def appendCacheControl(result:SimpleResult):SimpleResult =

@@ -11,9 +11,7 @@ object Application extends Controller with Helper{
   def index = Action { implicit request =>
     val user = getUser
     val total = Memos.total
-    val memos = Memos.public(0).map{
-      m => m.copy( username = Users.nameOf(m.user))
-    }
+    val memos = Memos.public(0)
     Ok(
       views.html.main(user, urlFor)(
         views.html.index(total, memos, 0, urlFor)
@@ -28,9 +26,7 @@ object Application extends Controller with Helper{
     Memos.public(page) match {
       case Nil   => Results.NotFound
       case xs =>
-        val memos = xs.map{
-          m => m.copy( username = Users.nameOf(m.user))
-        }
+        val memos = xs
         Ok(
           views.html.main(user, urlFor)(
             views.html.index(total, memos, page, urlFor)

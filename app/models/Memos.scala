@@ -30,6 +30,7 @@ object Memos extends SQLSyntaxSupport[Memos] {
   def apply(m: ResultName[Memos])(rs: WrappedResultSet): Memos = new Memos(
     id = rs.int(m.id),
     user = rs.int(m.user),
+    username = UsersCache.nameOf(rs.int(m.user)),
     content = rs.stringOpt(m.content),
     isPrivate = rs.byte(m.isPrivate),
     createdAt = rs.timestamp(m.createdAt).toDateTime,

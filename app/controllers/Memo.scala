@@ -26,7 +26,7 @@ object Memo extends Controller with Helper{
       m <- Memos.find(memoId)
       if m.isPrivate != 1 || !user.filter{ _.id == m.user }.isEmpty
     } yield {
-      val memo = m.copy(username = Users.nameOf(m.user), contentHtml = m.content.map{genMarkdown(_)})
+      val memo = m.copy(contentHtml = m.content.map{genMarkdown(_)})
       val memos = user.filter{ _.id == memo.user}.map{ user =>
         Memos.findByUser(memo.user)
       }.getOrElse {

@@ -11,6 +11,7 @@ POST    /signin                     controllers.Auth.signin
 GET     /mypage                     controllers.Memo.mypage
 GET     /memo/:memoId               controllers.Memo.show(memoId:Int)
 POST    /memo                       controllers.Memo.create
+GET     /init                       controllers.Initializer.index
 
 
 # Map static resources from the /public folder to the /assets URL path

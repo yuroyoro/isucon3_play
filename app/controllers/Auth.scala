@@ -29,7 +29,7 @@ object Auth extends Controller with Helper {
       form     <- formOpts
       username <- form("username").headOption
       password <- form("password").headOption
-      user     <- Users.findByName(username)
+      user     <- UsersCache.findByName(username)
       if user.password  == sha256(user.salt + password)
     } yield {
       // session.clear()
