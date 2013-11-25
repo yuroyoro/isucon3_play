@@ -33,7 +33,7 @@ object Auth extends Controller with Helper {
       if user.password  == sha256(user.salt + password)
     } yield {
       // session.clear()
-      user.updateLastAccess
+      // user.updateLastAccess
       appendCacheControl(
         Results.Redirect("/mypage").withSession(
           "user_id" -> user.id.toString,
