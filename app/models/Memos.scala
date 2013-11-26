@@ -68,9 +68,9 @@ object Memos extends SQLSyntaxSupport[Memos] {
         m.updated_at
       FROM memos AS m
       JOIN public_memos AS pm
-        ON pm.memo = m.id
-      WHERE pm.id BETWEEN ${page * 100} AND ${((page + 1) * 100) - 1}
-      ORDER BY m.id
+        ON pm.memo = m.id AND
+           pm.id BETWEEN ((SELECT cnt FROM public_count LIMIT 1) - ${(page + 1) * 100 - 1}) AND ((SELECT cnt FROM public_count LIMIT 1) - ${page * 100})
+      ORDER BY m.id DESC
     """.map(Memos.applyTitleOnly).list.apply()
   }
 
@@ -82,7 +82,7 @@ object Memos extends SQLSyntaxSupport[Memos] {
 
   def findPublicByUser(user_id:Int)(implicit session: DBSession = autoSession):List[Memos] = {
     withSQL {
-      select.from(Memos as m).where.eq(m.user, user_id).and.eq(m.isPrivate, 0).append(sqls"ORDER BY created_at DESC")
+      select.from(Memos as m).where.eq(m.user, user_id).and.eq(m.isPrivate, 0).append(sqls"ORDER BY id DESC")
     }.map(Memos(m.resultName)).list.apply()
   }
 
@@ -115,6 +115,7 @@ object Memos extends SQLSyntaxSupport[Memos] {
   def create(
     user: Int,
     content: Option[String] = None,
+    title: Option[String] = None,
     isPrivate: Byte,
     createdAt: DateTime,
     updatedAt: DateTime)(implicit session: DBSession = autoSession): Memos = {
@@ -122,12 +123,14 @@ object Memos extends SQLSyntaxSupport[Memos] {
       insert.into(Memos).columns(
         column.user,
         column.content,
+        column.title,
         column.isPrivate,
         column.createdAt,
         column.updatedAt
       ).values(
         user,
         content,
+        title,
         isPrivate,
         createdAt,
         updatedAt
@@ -135,9 +138,10 @@ object Memos extends SQLSyntaxSupport[Memos] {
     }.updateAndReturnGeneratedKey.apply()
 
     Memos(
-      id = generatedKey.toInt,
-      user = user,
-      content = content,
+      id        = generatedKey.toInt,
+      user      = user,
+      content   = content,
+      title     = title,
       isPrivate = isPrivate,
       createdAt = createdAt,
       updatedAt = updatedAt)
@@ -146,9 +150,10 @@ object Memos extends SQLSyntaxSupport[Memos] {
   def save(entity: Memos)(implicit session: DBSession = autoSession): Memos = {
     withSQL {
       update(Memos as m).set(
-        m.id -> entity.id,
-        m.user -> entity.user,
-        m.content -> entity.content,
+        m.id        -> entity.id,
+        m.user      -> entity.user,
+        m.content   -> entity.content,
+        m.title     -> entity.content.flatMap(_.split("""\r?\n""").headOption),
         m.isPrivate -> entity.isPrivate,
         m.createdAt -> entity.createdAt,
         m.updatedAt -> entity.updatedAt

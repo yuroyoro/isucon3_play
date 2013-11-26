@@ -45,16 +45,18 @@ object Memo extends Controller with Helper{
       val formOpts = request.body.asFormUrlEncoded
       antiCsrf(formOpts) {
         val now = new DateTime()
+        val content   = formOpts.flatMap(_.get("content")).flatMap(_.headOption)
         val memo = Memos.create(
           user = user.id,
-          content   = formOpts.flatMap(_.get("content")).flatMap(_.headOption),
+          content   = content,
+          title     = content.flatMap(_.split("""\r?\n""").headOption),
           isPrivate = formOpts.flatMap(_.get("is_private")).flatMap(_.headOption).map{_.toByte}.getOrElse(0x0),
           createdAt = now,
           updatedAt = now
         )
         if(memo.isPrivate == 0) {
-          Memos.incrementCount
           Memos.insertPublicMemos(memo.id)
+          Memos.incrementCount
         }
         Results.Redirect(s"/memo/${memo.id}")
       }

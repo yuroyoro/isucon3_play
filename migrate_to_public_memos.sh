@@ -1,5 +1,7 @@
 #!/bin/bash
-mysql -u isucon isucon <<SQL
+
+# mysql -u isucon isucon <<SQL
+mysql -u root -proot isucon <<SQL
 CREATE TABLE public_count (
   cnt int(11) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -16,5 +18,3 @@ INSERT INTO public_count(cnt) VALUES(20540);
 INSERT INTO public_memos(memo) SELECT id FROM memos WHERE is_private = 0 ORDER BY id;
 
 SQL
-# ) | mysql -u root -proot isucon 2>/dev/null
-#
