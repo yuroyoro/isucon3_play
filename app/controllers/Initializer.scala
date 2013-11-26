@@ -12,7 +12,6 @@ object Initializer extends Controller with Helper{
     UsersCache.load()
     Ok("initialized")
   }
-
 }
 
 

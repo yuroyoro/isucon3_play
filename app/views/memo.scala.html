@@ -1,4 +1,4 @@
-@(user:Option[models.Users], memo:models.Memos, older:Option[models.Memos], newer:Option[models.Memos], urlFor:String => String)
+@(user:Option[models.Users], memo:models.Memos, older:Option[Int], newer:Option[Int], urlFor:String => String)
 <p id="author">
 @if(memo.isPrivate == 1) {
 Private
@@ -10,11 +10,11 @@ Memo by @(memo.username.getOrElse("")) (@(memo.createdAt.toString("yyyy-MM-dd HH
 
 <hr>
 @if(!older.isEmpty) {
-<a id="older" href="@(urlFor("/memo/"))@(older.map(_.id).getOrElse(""))">&lt; older memo</a>
+<a id="older" href="@(urlFor("/memo/"))@(older.map(_.toString).getOrElse(""))">&lt; older memo</a>
 }
 |
 @if(!newer.isEmpty) {
-<a id="newer" href="@(urlFor("/memo/"))@(newer.map(_.id).getOrElse(""))">newer memo&gt;</a>
+<a id="newer" href="@(urlFor("/memo/"))@(newer.map(_.toString).getOrElse(""))">newer memo&gt;</a>
 }
 
 <hr>

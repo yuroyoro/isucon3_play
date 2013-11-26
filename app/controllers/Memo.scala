@@ -27,15 +27,9 @@ object Memo extends Controller with Helper{
       if m.isPrivate != 1 || !user.filter{ _.id == m.user }.isEmpty
     } yield {
       val memo = m.copy(contentHtml = m.content.map{genMarkdown(_)})
-      val memos = user.filter{ _.id == memo.user}.map{ user =>
-        Memos.findByUser(memo.user)
-      }.getOrElse {
-        Memos.findPublicByUser(memo.user)
-      }
-
-      val (newerSeq, olderSeq) = memos.span{ _.id != memo.id }
-      val newer = newerSeq.headOption
-      val older = olderSeq.tail.headOption
+      val public = user.filter{ _.id == memo.user}.isEmpty
+      val newer = Memos.newer(memo, public)
+      val older = Memos.older(memo, public)
       Ok(
         views.html.main(user, urlFor)(
           views.html.memo(user, memo, older, newer, urlFor)
@@ -58,6 +52,10 @@ object Memo extends Controller with Helper{
           createdAt = now,
           updatedAt = now
         )
+        if(memo.isPrivate == 0) {
+          Memos.incrementCount
+          Memos.insertPublicMemos(memo.id)
+        }
         Results.Redirect(s"/memo/${memo.id}")
       }
     }
