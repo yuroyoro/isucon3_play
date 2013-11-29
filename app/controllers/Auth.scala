@@ -7,14 +7,14 @@ import models._
 import scala.concurrent._
 
 object Auth extends Controller with Helper {
-  def signout = Action { implicit request =>
+  def signout = Action.async { implicit request =>
     requireUser{ user =>
       val formOpts = request.body.asFormUrlEncoded
       antiCsrf(formOpts){ Results.Redirect("/").withNewSession }
     }
   }
 
-  def index = Action { implicit request =>
+  def index = Action.async { implicit request =>
     val user = getUser
     Ok(
       views.html.main(user, urlFor)(
@@ -23,9 +23,9 @@ object Auth extends Controller with Helper {
     )
   }
 
-  def signin = Action { implicit request =>
+  def signin = Action.async { implicit request =>
     val formOpts = request.body.asFormUrlEncoded
-    (for {
+    val result:Option[SimpleResult] = (for {
       form     <- formOpts
       username <- form("username").headOption
       password <- form("password").headOption
@@ -40,12 +40,14 @@ object Auth extends Controller with Helper {
           "token"   -> sha256(scala.util.Random.nextInt.toString)
         )
       )
-    }).getOrElse {
-      Ok(
+    })
+
+    lazy val fallback:SimpleResult  = Ok(
         views.html.main(None, urlFor)(
           views.html.signin(None, urlFor)
         )
       )
-    }
+    val res:SimpleResult = result.getOrElse(fallback)
+    futurize(res)
   }
 }

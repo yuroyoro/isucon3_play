@@ -9,7 +9,7 @@ import org.joda.time.{DateTime}
 
 object Memo extends Controller with Helper{
 
-  def mypage = Action { implicit request =>
+  def mypage = Action.async { implicit request =>
     requireUser { user =>
       val memos = Memos.findByUser(user.id)
       Ok(
@@ -20,9 +20,9 @@ object Memo extends Controller with Helper{
     }
   }
 
-  def show(memoId:Int) = Action { implicit request =>
+  def show(memoId:Int) = Action.async { implicit request =>
     val user = getUser
-    (for{
+    val result:Option[SimpleResult] = (for {
       m <- Memos.find(memoId)
       if m.isPrivate != 1 || !user.filter{ _.id == m.user }.isEmpty
     } yield {
@@ -35,12 +35,13 @@ object Memo extends Controller with Helper{
           views.html.memo(user, memo, older, newer, urlFor)
         )
       )
-    }).getOrElse {
-      Results.NotFound
-    }
+    })
+
+    val res:SimpleResult = result.getOrElse(Results.NotFound)
+    futurize(res)
   }
 
-  def create = Action { implicit request =>
+  def create = Action.async { implicit request =>
     requireUser { user =>
       val formOpts = request.body.asFormUrlEncoded
       antiCsrf(formOpts) {

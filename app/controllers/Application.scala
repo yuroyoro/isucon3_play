@@ -8,7 +8,7 @@ import scala.concurrent._
 
 object Application extends Controller with Helper{
 
-  def index = Action { implicit request =>
+  def index = Action.async { implicit request =>
     val user = getUser
     val total = Memos.total
     val memos = Memos.public(0)
@@ -19,7 +19,7 @@ object Application extends Controller with Helper{
     )
   }
 
-  def recent(page:Int) = Action { implicit request =>
+  def recent(page:Int) = Action.async { implicit request =>
     val total = Memos.total
     val user = getUser
 
