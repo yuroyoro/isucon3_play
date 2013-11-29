@@ -5,6 +5,7 @@ import play.api.mvc._
 import models._
 
 import scala.concurrent._
+import java.util.concurrent.Executors
 
 trait Helper {
 
@@ -14,17 +15,15 @@ trait Helper {
 
   implicit def futurize[A](result:SimpleResult):Future[SimpleResult] = Future.successful(result)
 
-  def requireUser[A](f:Users => SimpleResult)(implicit request:Request[A]):SimpleResult = {
+  def requireUser[A](f:Users => Future[SimpleResult])(implicit request:Request[A], ec: ExecutionContext):Future[SimpleResult] = {
     getUser(request).map{ user =>
-      appendCacheControl(
-        f(user)
-      )
+      f(user).map(appendCacheControl)
     }.getOrElse {
       Results.Redirect("/")
     }
   }
 
-  def antiCsrf[A](formOpts:Option[Map[String, Seq[String]]])(f: => SimpleResult)(implicit request:Request[A]):SimpleResult = {
+  def antiCsrf[A](formOpts:Option[Map[String, Seq[String]]])(f: => Future[SimpleResult])(implicit request:Request[A]):Future[SimpleResult] = {
     (for{
       form  <- formOpts
       sid   <- form.get("sid").flatMap(_.headOption)

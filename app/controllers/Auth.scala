@@ -5,8 +5,10 @@ import play.api.mvc._
 import models._
 
 import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Auth extends Controller with Helper {
+
   def signout = Action.async { implicit request =>
     requireUser{ user =>
       val formOpts = request.body.asFormUrlEncoded
@@ -16,10 +18,7 @@ object Auth extends Controller with Helper {
 
   def index = Action.async { implicit request =>
     val user = getUser
-    Ok(
-      views.html.main(user, urlFor)(
-        views.html.signin(user, urlFor)
-      )
+    Ok( views.html.main(user, urlFor)( views.html.signin(user, urlFor))
     )
   }
 
@@ -42,11 +41,7 @@ object Auth extends Controller with Helper {
       )
     })
 
-    lazy val fallback:SimpleResult  = Ok(
-        views.html.main(None, urlFor)(
-          views.html.signin(None, urlFor)
-        )
-      )
+    lazy val fallback:SimpleResult  = Ok( views.html.main(None, urlFor)( views.html.signin(None, urlFor)))
     val res:SimpleResult = result.getOrElse(fallback)
     futurize(res)
   }
